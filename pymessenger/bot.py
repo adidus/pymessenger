@@ -42,17 +42,31 @@ class Bot:
             self._auth_args = auth
         return self._auth_args
 
-    def send_recipient(self, recipient_id, payload, notification_type=NotificationType.regular):
+    def send_recipient(
+            self,
+            recipient_id,
+            payload,
+            notification_type=NotificationType.regular,
+            tag='ACCOUNT_UPDATE'):
         payload['recipient'] = {
             'id': recipient_id
         }
         payload['notification_type'] = notification_type.value
+        payload['tag'] = tag
         return self.send_raw(payload)
 
-    def send_message(self, recipient_id, message, notification_type=NotificationType.regular):
-        return self.send_recipient(recipient_id, {
-            'message': message
-        }, notification_type)
+    def send_message(
+            self,
+            recipient_id,
+            message,
+            notification_type=NotificationType.regular,
+            tag='ACCOUNT_UPDATE'):
+        return self.send_recipient(
+            recipient_id,
+            {'message': message},
+            notification_type,
+            tag
+        )
 
     def send_attachment(self, recipient_id, attachment_type, attachment_path,
                         notification_type=NotificationType.regular):
@@ -88,8 +102,12 @@ class Bot:
         return requests.post(self.graph_url, data=multipart_data,
                              params=self.auth_args, headers=multipart_header).json()
 
-    def send_attachment_url(self, recipient_id, attachment_type, attachment_url,
-                            notification_type=NotificationType.regular):
+    def send_attachment_url(
+            self,
+            recipient_id,
+            attachment_type,
+            attachment_url,
+            notification_type=NotificationType.regular):
         """Send an attachment to the specified recipient using URL.
         Input:
             recipient_id: recipient id to send to
@@ -107,7 +125,13 @@ class Bot:
             }
         }, notification_type)
 
-    def send_text_message(self, recipient_id, message, notification_type=NotificationType.regular):
+    def send_text_message(
+            self,
+            recipient_id,
+            message,
+            tag='ACCOUNT_UPDATE',
+            notification_type=NotificationType.regular
+    ):
         """Send text messages to the specified recipient.
         https://developers.facebook.com/docs/messenger-platform/send-api-reference/text-message
         Input:
@@ -116,9 +140,12 @@ class Bot:
         Output:
             Response from API as <dict>
         """
-        return self.send_message(recipient_id, {
-            'text': message
-        }, notification_type)
+        return self.send_message(
+            recipient_id,
+            {'text': message},
+            notification_type,
+            tag
+        )
 
     def send_generic_message(self, recipient_id, elements, notification_type=NotificationType.regular):
         """Send generic messages to the specified recipient.
@@ -156,6 +183,45 @@ class Bot:
                     "template_type": "button",
                     "text": text,
                     "buttons": buttons
+                }
+            }
+        }, notification_type)
+
+    def send_url_button(
+            self,
+            recipient_id,
+            title,
+            text,
+            url,
+            webview='full',
+            notification_type=NotificationType.regular
+    ):
+        """Send text messages to the specified recipient.
+        https://developers.facebook.com/docs/messenger-platform/send-api-reference/button-template
+        Input:
+            recipient_id: recipient id to send to
+            text: text of message to send
+            buttons: buttons to send
+        Output:
+            Response from API as <dict>
+        """
+
+        button = [
+            {
+                "type": "web_url",
+                "url": url,
+                "title": title,
+                "webview_height_ratio": webview
+          }
+        ]
+
+        return self.send_message(recipient_id, {
+            "attachment": {
+                "type": "template",
+                "payload": {
+                    "template_type": "button",
+                    "text": text,
+                    "buttons": button
                 }
             }
         }, notification_type)
