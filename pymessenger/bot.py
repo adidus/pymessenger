@@ -46,26 +46,23 @@ class Bot:
             self,
             recipient_id,
             payload,
-            notification_type=NotificationType.regular,
-            tag='ACCOUNT_UPDATE'):
+            notification_type=NotificationType.regular):
         payload['recipient'] = {
             'id': recipient_id
         }
         payload['notification_type'] = notification_type.value
-        payload['tag'] = tag
+
         return self.send_raw(payload)
 
     def send_message(
             self,
             recipient_id,
             message,
-            notification_type=NotificationType.regular,
-            tag='ACCOUNT_UPDATE'):
+            notification_type=NotificationType.regular):
         return self.send_recipient(
             recipient_id,
             {'message': message},
-            notification_type,
-            tag
+            notification_type
         )
 
     def send_attachment(self, recipient_id, attachment_type, attachment_path,
@@ -129,7 +126,6 @@ class Bot:
             self,
             recipient_id,
             message,
-            tag='ACCOUNT_UPDATE',
             notification_type=NotificationType.regular
     ):
         """Send text messages to the specified recipient.
@@ -143,8 +139,7 @@ class Bot:
         return self.send_message(
             recipient_id,
             {'text': message},
-            notification_type,
-            tag
+            notification_type
         )
 
     def send_generic_message(self, recipient_id, elements, notification_type=NotificationType.regular):
@@ -372,12 +367,32 @@ class Bot:
 
     def send_raw(self, payload):
         request_endpoint = '{0}/me/messages'.format(self.graph_url)
+        tag = ''
         response = requests.post(
             request_endpoint,
             params=self.auth_args,
             json=payload
         )
+
+        if response.status_code != 200:
+            tag = 'CONFIRMED_EVENT_UPDATE'
+            payload['tag'] = tag
+            response = requests.post(
+                request_endpoint,
+                params=self.auth_args,
+                json=payload
+            )
+
+            if response.status_code != 200:
+                tag = 'ACCOUNT_UPDATE'
+                payload['tag'] = tag
+                response = requests.post(
+                    request_endpoint,
+                    params=self.auth_args,
+                    json=payload
+                )
         result = response.json()
+        result['tag'] = tag
         return result
 
     def _send_payload(self, payload):
